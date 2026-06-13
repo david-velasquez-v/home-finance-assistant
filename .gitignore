@@ -1,0 +1,9 @@
+.env
+state.json
+credentials/
+__pycache__/
+*.pyc
+.venv/
+dist/
+*.egg-info/
+.pytest_cache/
