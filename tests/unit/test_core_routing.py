@@ -59,3 +59,28 @@ def test_dispatch_by_message_type(
             david_pdf_update, telegram=telegram, client=client, sheet=sheet, config=settings
         )
         reconcile_statement.assert_called_once()
+
+
+def test_text_not_an_expense_skips_append_and_replies(david_text_update, settings):
+    with patch("expenses.core.parse_text", return_value=None):
+        telegram, client, sheet = MagicMock(), MagicMock(), MagicMock()
+        process_update(
+            david_text_update, telegram=telegram, client=client, sheet=sheet, config=settings
+        )
+
+        sheet.append.assert_not_called()
+        telegram.send_message.assert_called_once()
+        assert "No pude detectar un gasto" in telegram.send_message.call_args.kwargs["text"]
+
+
+def test_photo_not_an_expense_skips_append_and_replies(daniela_photo_update, settings):
+    with patch("expenses.core.parse_image", return_value=None):
+        telegram, client, sheet = MagicMock(), MagicMock(), MagicMock()
+        telegram.download_file.return_value = b"bytes"
+        process_update(
+            daniela_photo_update, telegram=telegram, client=client, sheet=sheet, config=settings
+        )
+
+        sheet.append.assert_not_called()
+        telegram.send_message.assert_called_once()
+        assert "No pude detectar un gasto" in telegram.send_message.call_args.kwargs["text"]

@@ -3,9 +3,10 @@ import base64
 import instructor
 from instructor.processing.multimodal import PDF
 
-from expenses.bank_statements.llm import _STATEMENT_SYSTEM, parse_statement
+from expenses.bank_statements.llm import parse_statement
 from expenses.bank_statements.pdf import extract_pdf_text, text_is_unusable
 from expenses.models import StatementTransaction, TransactionList
+from expenses.prompts import STATEMENT_SYSTEM
 
 _MULTIMODAL_USER_PROMPT = """\
 Extract all transactions from the attached bank statement PDF."""
@@ -25,7 +26,7 @@ def parse_statement_pdf(
     data = base64.b64encode(pdf_bytes).decode("ascii")
     document = PDF(source="statement.pdf", data=data)
     messages = [
-        {"role": "system", "content": _STATEMENT_SYSTEM},
+        {"role": "system", "content": STATEMENT_SYSTEM},
         {
             "role": "user",
             "content": [

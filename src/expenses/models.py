@@ -4,7 +4,7 @@ from decimal import Decimal
 from enum import Enum
 from typing import Literal
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, model_validator
 
 Pagador = Literal["David", "Daniela"]
 
@@ -50,6 +50,21 @@ class Expense(BaseModel):
     categoria: Category | None = None
     valor: Decimal
     pagador: Pagador
+
+
+class ParsedExpense(BaseModel):
+    is_expense: bool = Field(
+        description="False for greetings, tests, questions, or anything that isn't a recorded expense."
+    )
+    expense: Expense | None = None
+
+    @model_validator(mode="after")
+    def _consistent(self) -> "ParsedExpense":
+        if self.is_expense and self.expense is None:
+            raise ValueError("is_expense=True requires an expense object")
+        if not self.is_expense and self.expense is not None:
+            raise ValueError("is_expense=False forbids an expense object")
+        return self
 
 
 class ExpenseList(BaseModel):

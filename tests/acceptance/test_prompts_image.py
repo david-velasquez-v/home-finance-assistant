@@ -126,6 +126,7 @@ def test_parse_image(
         caption=scenario.caption,
     )
 
+    assert result is not None, f"expected an expense, got None for {receipt_path.name}"
     assert result.valor == expected.valor
     assert result.pagador == scenario.expected_pagador
     assert _fold(expected.descripcion_substring) in _fold(result.descripcion)

@@ -17,6 +17,8 @@ from expenses.telegram_processor import (
 )
 from expenses.text_messages.llm import parse_text
 
+_NOT_AN_EXPENSE = "🤔 No pude detectar un gasto"
+
 
 def reconcile_statement(
     pdf_bytes: bytes,
@@ -77,6 +79,13 @@ def process_update(
                     sent_at=msg.sent_at,
                     client=client,
                 )
+                if expense is None:
+                    telegram.send_message(
+                        chat_id=msg.chat_id,
+                        text=_NOT_AN_EXPENSE,
+                        reply_to_message_id=msg.message_id,
+                    )
+                    return
                 sheet.append(expense=expense)
                 telegram.send_message(
                     chat_id=msg.chat_id,
@@ -93,6 +102,13 @@ def process_update(
                     client=client,
                     caption=msg.caption,
                 )
+                if expense is None:
+                    telegram.send_message(
+                        chat_id=msg.chat_id,
+                        text=_NOT_AN_EXPENSE,
+                        reply_to_message_id=msg.message_id,
+                    )
+                    return
                 sheet.append(expense=expense)
                 telegram.send_message(
                     chat_id=msg.chat_id,

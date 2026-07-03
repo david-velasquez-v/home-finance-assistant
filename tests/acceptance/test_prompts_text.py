@@ -86,6 +86,7 @@ def test_parse_text(case: _TextCase, client: instructor.Instructor) -> None:
         client=client,
     )
 
+    assert result is not None, f"expected an expense, got None for {case.text!r}"
     assert result.valor == case.expected_valor
     assert result.pagador == case.sender
     assert result.fecha == case.sent_at.date()
@@ -94,3 +95,23 @@ def test_parse_text(case: _TextCase, client: instructor.Instructor) -> None:
         assert result.categoria in case.acceptable_categorias, (
             f"expected one of {case.acceptable_categorias}, got {result.categoria}"
         )
+
+
+_NOT_EXPENSE_CASES: list[tuple[str, Pagador]] = [
+    ("This is a test", "Daniela"),
+    ("Hola, cómo estás?", "David"),
+    ("¿Cuánto gasté esta semana?", "Daniela"),
+]
+
+
+@pytest.mark.parametrize("text,sender", _NOT_EXPENSE_CASES)
+def test_parse_text_not_an_expense(
+    text: str, sender: Pagador, client: instructor.Instructor
+) -> None:
+    result = parse_text(
+        text=text,
+        sender=sender,
+        sent_at=datetime(2026, 6, 12, 14, 30),
+        client=client,
+    )
+    assert result is None, f"expected None, got {result!r} for {text!r}"
