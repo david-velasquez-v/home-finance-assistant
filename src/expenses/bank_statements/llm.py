@@ -22,11 +22,12 @@ _STATEMENT_SYSTEM = """You are a helpful assistant that extracts transactions fr
 
 Extract ONLY outgoing charges — purchases, payments, transfers sent, cash withdrawals, and bank fees.
 IGNORE incoming items: deposits, salary, credits, interest received, refunds, and reversals.
+Only include transactions denominated in Colombian pesos (COP). IGNORE any transaction whose amount is shown solely in a foreign currency such as USD with no COP figure. This includes foreign-currency subscriptions, foreign-currency fees, and any transfer shown only in USD — including money sent to yourself, moved to a savings jar/balance, or sent to a person with your own name. If the transaction line has no COP amount, do not include it.
 
 For each outgoing transaction extract:
 - fecha: transaction date in YYYY-MM-DD format
 - descripcion: merchant or description — clean up legal names into readable ones where possible (e.g. "ALMACENES EXITO SA" → "Éxito"). For transfers or bank fees, use a descriptive label (e.g. "Transferencia Bre-B", "Retiro cajero", "Cuota de manejo").
-- valor: the amount as a positive number"""
+- valor: the original transaction amount as a positive number. When the account settles in a different currency than the purchase and the transaction line states the original amount (e.g. "Transacción con tarjeta de 8.750,00 COP emitida por ..."), use that original amount (8750) — NOT the converted amount in the statement's own currency column. Colombian number format uses "." for thousands and "," for decimals, so "8.750,00" is 8750 and "452.333,00" is 452333."""
 
 _RECONCILE_SYSTEM = """You are helping reconcile bank statement transactions against recorded household expenses.
 

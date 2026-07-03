@@ -16,6 +16,7 @@ wasn't).
 """
 from __future__ import annotations
 
+import unicodedata
 from dataclasses import dataclass, field
 from datetime import date
 from decimal import Decimal
@@ -25,8 +26,7 @@ import instructor
 import pytest
 
 from expenses.bank_statements import llm as bank_llm
-from expenses.bank_statements.llm import parse_statement
-from expenses.bank_statements.pdf import extract_pdf_text
+from expenses.bank_statements.multimodal import extract_transactions
 from expenses.models import Expense
 
 pytestmark = pytest.mark.acceptance
@@ -158,13 +158,61 @@ _nu_case = _ReconcileCase(
 )
 
 
-_CASES: list[_ReconcileCase] = [_bbva_case, _nu_case]
+# --- Wise May 2026 (David's USD account, COP card purchases) ---
+# Exercises the multimodal extraction path (pdfplumber can't read this PDF) end
+# to end through reconciliation. `sheet_entries` are hand-crafted to hit:
+#   - exact date+amount match on a distinctive merchant ("Alambique" 05-09)
+#   - commercial-name match ("Café Juan Valdez" in sheet ↔ "Juan Valdez" 05-15)
+#   - ±2 day fuzz ("Medipiel" recorded 05-04 ↔ statement 05-03)
+# The amounts are the ORIGINAL COP amounts shown in each transaction line, not
+# the USD settlement — the USD-only rows (transfers, fees, subscriptions) are
+# dropped at extraction and never reach reconciliation.
+_wise_sheet = [
+    Expense(fecha=date(2026, 5, 9),  descripcion="Alambique",          valor=Decimal("452333"), pagador="David"),
+    Expense(fecha=date(2026, 5, 10), descripcion="Frisby",             valor=Decimal("91400"),  pagador="David"),
+    Expense(fecha=date(2026, 5, 15), descripcion="Café Juan Valdez",   valor=Decimal("25000"),  pagador="David"),
+    Expense(fecha=date(2026, 5, 29), descripcion="Éxito",              valor=Decimal("8750"),   pagador="David"),
+    Expense(fecha=date(2026, 5, 4),  descripcion="Medipiel",           valor=Decimal("259430"), pagador="David"),
+]
+
+_wise_case = _ReconcileCase(
+    name="wise_may_2026_david_curated",
+    pdf_filename="Extracto Wise Mayo.pdf",
+    sender="David",
+    sheet_entries=_wise_sheet,
+    expected_matched=[
+        _Expectation("alambique",     Decimal("452333")),
+        _Expectation("frisby",        Decimal("91400")),
+        _Expectation("juan valdez",   Decimal("25000")),
+        _Expectation("exito",         Decimal("8750")),
+        _Expectation("medipiel viva", Decimal("259430")),
+    ],
+    expected_unmatched=[
+        _Expectation("mamasita",      Decimal("260037")),
+        _Expectation("cabeza y cola", Decimal("136401")),
+        _Expectation("alto bistro",   Decimal("156103")),
+        _Expectation("market pasteur", Decimal("425")),
+    ],
+)
+
+
+_CASES: list[_ReconcileCase] = [_bbva_case, _nu_case, _wise_case]
+
+
+def _norm(text: str) -> str:
+    """Comparison key ignoring case, accents, whitespace and punctuation.
+
+    Same rationale as in test_prompts_statement.py: merchant matching ignores
+    capitalization/diacritics/spacing but an objectively wrong name still fails.
+    """
+    decomposed = unicodedata.normalize("NFKD", text.lower())
+    return "".join(c for c in decomposed if c.isalnum())
 
 
 def _find_match(exp: _Expectation, unmatched_pairs: list[tuple[str, Decimal]]) -> bool:
+    needle = _norm(exp.descripcion_substring)
     return any(
-        exp.valor == valor and exp.descripcion_substring in desc
-        for desc, valor in unmatched_pairs
+        exp.valor == valor and needle in desc for desc, valor in unmatched_pairs
     )
 
 
@@ -174,15 +222,14 @@ def test_reconcile(case: _ReconcileCase, client: instructor.Instructor) -> None:
     if not pdf_path.exists():
         pytest.skip(f"missing statement PDF {case.pdf_filename}")
 
-    pdf_text = extract_pdf_text(pdf_bytes=pdf_path.read_bytes())
-    txns = parse_statement(pdf_text=pdf_text, client=client)
+    txns = extract_transactions(pdf_bytes=pdf_path.read_bytes(), client=client)
     unmatched = bank_llm.reconcile(
         txns=txns,
         sheet_entries=case.sheet_entries,
         client=client,
     )
 
-    unmatched_pairs = [(t.descripcion.lower(), t.valor) for t in unmatched]
+    unmatched_pairs = [(_norm(t.descripcion), t.valor) for t in unmatched]
 
     for exp in case.expected_matched:
         assert not _find_match(exp, unmatched_pairs), (

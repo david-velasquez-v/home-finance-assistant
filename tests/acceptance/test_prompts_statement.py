@@ -21,13 +21,15 @@ by `test_reconciliation.py`.
 `expected_count` accepts a range because statement extraction may include or
 exclude edge cases (small bank fees, borderline reversals) run-to-run.
 
-PDFs whose text cannot be extracted by pdfplumber are skipped at runtime with
-a `pytest.skip` — see the KNOWN LIMITATION note in
-`src/expenses/bank_statements/pdf.py::extract_pdf_text`.
+Extraction goes through `extract_transactions`, which uses pdfplumber text when
+it's readable and falls back to the multimodal LLM path for PDFs whose embedded
+fonts produce `(cid:XX)` gibberish (e.g. Wise). A fixture is skipped only when
+it has no `.expected.json` sidecar yet.
 """
 from __future__ import annotations
 
 import json
+import unicodedata
 from datetime import date
 from decimal import Decimal
 from pathlib import Path
@@ -35,8 +37,7 @@ from pathlib import Path
 import instructor
 import pytest
 
-from expenses.bank_statements.llm import parse_statement
-from expenses.bank_statements.pdf import extract_pdf_text
+from expenses.bank_statements.multimodal import extract_transactions
 from expenses.models import StatementTransaction
 
 pytestmark = pytest.mark.acceptance
@@ -53,9 +54,22 @@ def _discover() -> list[Path]:
 _STATEMENTS = _discover()
 
 
+def _norm(text: str) -> str:
+    """Comparison key ignoring case, accents, whitespace and punctuation.
+
+    Merchant-name matching should not care about capitalization, diacritics, or
+    spacing/punctuation (e.g. "Éxito" vs "Exito", "Torre Alta 903" vs
+    "Torrealta 903", "Café San Alberto" vs "cafe san alberto casa"). Only the
+    letters and digits matter — so an objectively wrong name (e.g. "Cabaña y
+    Cola" vs "Cabeza y Cola") still fails to match.
+    """
+    decomposed = unicodedata.normalize("NFKD", text.lower())
+    return "".join(c for c in decomposed if c.isalnum())
+
+
 def _contains(txns: list[StatementTransaction], substring: str, valor: Decimal) -> bool:
-    needle = substring.lower()
-    return any(needle in t.descripcion.lower() and t.valor == valor for t in txns)
+    needle = _norm(substring)
+    return any(needle in _norm(t.descripcion) and t.valor == valor for t in txns)
 
 
 @pytest.mark.skipif(not _STATEMENTS, reason="no statement fixtures in fixtures/statements/")
@@ -67,13 +81,7 @@ def test_parse_statement(pdf_path: Path, client: instructor.Instructor) -> None:
 
     expected = json.loads(expected_path.read_text())
 
-    pdf_text = extract_pdf_text(pdf_bytes=pdf_path.read_bytes())
-    if not pdf_text.strip() or pdf_text.count("(cid:") > 20:
-        pytest.skip(
-            f"{pdf_path.name}: pdfplumber can't extract text (embedded font issue). "
-            f"See extract_pdf_text KNOWN LIMITATION."
-        )
-    txns = parse_statement(pdf_text=pdf_text, client=client)
+    txns = extract_transactions(pdf_bytes=pdf_path.read_bytes(), client=client)
 
     expected_count = expected["expected_count"]
     if isinstance(expected_count, list):
