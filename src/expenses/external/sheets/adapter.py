@@ -1,9 +1,9 @@
 from datetime import date, datetime
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 from typing import cast
 
 import gspread
-from gspread.utils import ValueInputOption
+from gspread.utils import DateTimeOption, ValueInputOption, ValueRenderOption
 
 from expenses.external.sheets.client import SheetsClient
 from expenses.models import Category, Expense, Pagador, LastUpdatedState
@@ -59,7 +59,10 @@ class SheetAdapter:
         pagador: Pagador | None = None,
     ) -> list[Expense]:
         rows: list[list[str | int | float | bool | None]] = (
-            self._expenses.get_all_values()
+            self._expenses.get_all_values(
+                value_render_option=ValueRenderOption.unformatted,
+                date_time_render_option=DateTimeOption.formatted_string,
+            )
         )
         expenses: list[Expense] = []
         for row in rows[1:]:  # skip header
@@ -96,7 +99,7 @@ class SheetAdapter:
                         pagador=cast(Pagador, row_pagador),
                     )
                 )
-            except Exception:
+            except (ValueError, InvalidOperation):
                 continue
         return expenses
 
