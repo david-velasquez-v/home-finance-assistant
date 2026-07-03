@@ -35,14 +35,3 @@ class TelegramClient:
         r2 = httpx.get(f"{self._file_base}/{file_path}", timeout=60)
         r2.raise_for_status()
         return r2.content
-
-    def set_webhook(self, url: str, secret: str = "") -> None:
-        payload: dict[str, Any] = {"url": url}
-        if secret:
-            payload["secret_token"] = secret
-        r = httpx.post(f"{self._base}/setWebhook", json=payload, timeout=10)
-        r.raise_for_status()
-
-    def delete_webhook(self) -> None:
-        r = httpx.post(f"{self._base}/deleteWebhook", timeout=10)
-        r.raise_for_status()

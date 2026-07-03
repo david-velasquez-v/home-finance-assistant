@@ -20,7 +20,3 @@ class Settings(BaseSettings):
     google_spreadsheet_id: str
     google_sheet_name: str = "Gastos"
     credentials_path: Path = Path("credentials/service_account.json")
-
-    webhook_host: str = "0.0.0.0"
-    webhook_port: int = 8080
-    webhook_secret: str = ""
