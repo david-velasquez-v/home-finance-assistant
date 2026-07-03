@@ -17,6 +17,6 @@ class Settings(BaseSettings):
     gemini_api_key: str = ""
 
     google_spreadsheet_id: str
-    google_sheet_name: str = "Gastos"
+    google_sheet_name: str = "Entradas"
     state_sheet_name: str = "_state"
     google_credentials_json: str = ""
