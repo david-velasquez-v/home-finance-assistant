@@ -10,8 +10,8 @@ class Settings(BaseSettings):
     telegram_user_david: int
     telegram_user_daniela: int
 
-    llm_provider: Literal["anthropic", "openai", "google"] = "anthropic"
-    llm_model: str = "claude-haiku-4-5-20251001"
+    llm_provider: Literal["anthropic", "openai", "google"] = "openai"
+    llm_model: str = "gpt-5.4-2026-03-05"
     anthropic_api_key: str = ""
     openai_api_key: str = ""
     gemini_api_key: str = ""
