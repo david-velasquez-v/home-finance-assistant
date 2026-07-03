@@ -1,4 +1,5 @@
-from pathlib import Path
+import json
+from typing import Any
 
 import gspread
 from google.oauth2.service_account import Credentials
@@ -10,9 +11,19 @@ _SCOPES = [
 
 
 class SheetsClient:
-    def __init__(self, credentials_path: Path) -> None:
-        creds = Credentials.from_service_account_file(str(credentials_path), scopes=_SCOPES)
-        self._client = gspread.authorize(creds)
+    def __init__(self, credentials_json: str, spreadsheet_id: str) -> None:
+        info: dict[str, Any] = json.loads(credentials_json)
+        creds = Credentials.from_service_account_info(info, scopes=_SCOPES)
+        client = gspread.authorize(creds)
+        self._spreadsheet = client.open_by_key(spreadsheet_id)
 
-    def worksheet(self, spreadsheet_id: str, sheet_name: str) -> gspread.Worksheet:
-        return self._client.open_by_key(spreadsheet_id).worksheet(sheet_name)
+    def get_or_create_worksheet(
+        self,
+        title: str,
+        rows: int = 100,
+        cols: int = 10,
+    ) -> gspread.Worksheet:
+        try:
+            return self._spreadsheet.worksheet(title)
+        except gspread.WorksheetNotFound:
+            return self._spreadsheet.add_worksheet(title=title, rows=rows, cols=cols)

@@ -1,4 +1,5 @@
-from datetime import date
+from dataclasses import dataclass
+from datetime import date, datetime
 from decimal import Decimal
 from enum import Enum
 from typing import Literal
@@ -6,6 +7,12 @@ from typing import Literal
 from pydantic import BaseModel
 
 Pagador = Literal["David", "Daniela"]
+
+
+@dataclass
+class LastUpdatedState:
+    last_update_id: int = 0
+    last_run: datetime | None = None
 
 
 class Category(str, Enum):

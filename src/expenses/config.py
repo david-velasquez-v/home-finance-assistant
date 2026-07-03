@@ -1,4 +1,3 @@
-from pathlib import Path
 from typing import Literal
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -19,4 +18,5 @@ class Settings(BaseSettings):
 
     google_spreadsheet_id: str
     google_sheet_name: str = "Gastos"
-    credentials_path: Path = Path("credentials/service_account.json")
+    state_sheet_name: str = "_state"
+    google_credentials_json: str = ""
