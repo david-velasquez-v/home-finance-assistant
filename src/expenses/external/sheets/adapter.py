@@ -41,14 +41,17 @@ class SheetAdapter:
             )
 
     def append(self, expense: Expense) -> None:
-        self._expenses.append_row(
-            values=[
+        # Target the first row where column A (Fecha) is empty
+        next_row = len(self._expenses.col_values(1)) + 1
+        self._expenses.update(
+            range_name=f"A{next_row}:E{next_row}",
+            values=[[
                 expense.fecha.isoformat(),
                 expense.descripcion,
                 expense.categoria.value if expense.categoria else "",
                 str(expense.valor),
                 expense.pagador,
-            ],
+            ]],
             value_input_option=ValueInputOption.user_entered,
         )
 

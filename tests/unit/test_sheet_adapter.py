@@ -18,10 +18,14 @@ def _make_adapter(
 
 def test_append_writes_correct_row(sample_expense):
     adapter, expenses, _ = _make_adapter()
+    # Simulate a sheet with header + 3 data rows in column A → next row is 5.
+    expenses.col_values.return_value = ["Fecha", "d1", "d2", "d3"]
     adapter.append(expense=sample_expense)
 
-    expenses.append_row.assert_called_once()
-    values = expenses.append_row.call_args.kwargs["values"]
+    expenses.update.assert_called_once()
+    kwargs = expenses.update.call_args.kwargs
+    assert kwargs["range_name"] == "A5:E5"
+    values = kwargs["values"][0]
     assert values[0] == "2026-06-12"
     assert values[1] == "Carulla"
     assert values[2] == "Mercado"
@@ -31,9 +35,12 @@ def test_append_writes_correct_row(sample_expense):
 
 def test_append_no_category(sample_expense_no_category):
     adapter, expenses, _ = _make_adapter()
+    expenses.col_values.return_value = ["Fecha"]  # only the header → next row is 2
     adapter.append(expense=sample_expense_no_category)
 
-    values = expenses.append_row.call_args.kwargs["values"]
+    kwargs = expenses.update.call_args.kwargs
+    assert kwargs["range_name"] == "A2:E2"
+    values = kwargs["values"][0]
     assert values[2] == ""
 
 

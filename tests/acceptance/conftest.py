@@ -74,12 +74,12 @@ def clean_state_tab(
 def preserve_expenses_tail(
     sheets_client: SheetsClient, acceptance_settings: Settings
 ) -> Iterator[gspread.Worksheet]:
-    """Snapshot the expenses tab row count; delete any rows appended during the test."""
+    """Snapshot column A's last populated row; clear any A:E cells written past it during the test."""
     ws = sheets_client.get_or_create_worksheet(acceptance_settings.google_sheet_name)
-    n_before = len(ws.get_all_values())
+    n_before = len(ws.col_values(1))
     try:
         yield ws
     finally:
-        n_after = len(ws.get_all_values())
+        n_after = len(ws.col_values(1))
         if n_after > n_before:
-            ws.delete_rows(n_before + 1, n_after)
+            ws.batch_clear([f"A{n_before + 1}:E{n_after}"])

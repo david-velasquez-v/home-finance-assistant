@@ -103,7 +103,8 @@ def test_append_preserves_existing_rows(
     preserve_expenses_tail: gspread.Worksheet,
 ) -> None:
     ws = preserve_expenses_tail
-    rows_before = ws.get_all_values()
+    n_before = len(ws.col_values(1))
+    block_before = ws.get(f"A1:E{n_before}")
 
     adapter = _build_adapter(sheets_client, acceptance_settings)
     tag_a = _unique_descripcion()
@@ -115,9 +116,14 @@ def test_append_preserves_existing_rows(
         fecha=date(2026, 1, 2), descripcion=tag_b, valor=Decimal("2"), pagador="Daniela",
     ))
 
-    rows_after = ws.get_all_values()
-    assert len(rows_after) == len(rows_before) + 2
-    assert rows_after[: len(rows_before)] == rows_before, "existing rows must not shift or mutate"
+    n_after = len(ws.col_values(1))
+    assert n_after == n_before + 2, "column A should have grown by exactly 2 rows"
+
+    block_after = ws.get(f"A1:E{n_before}")
+    assert block_after == block_before, "existing A:E block must not shift or mutate"
+
+    new_rows = ws.get(f"A{n_before + 1}:E{n_after}")
+    assert [r[1] for r in new_rows] == [tag_a, tag_b], "new rows must land immediately below existing data"
 
 
 # -------- client provisioning --------
