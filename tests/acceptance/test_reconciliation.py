@@ -24,9 +24,9 @@ from pathlib import Path
 import instructor
 import pytest
 
-from expenses.bank_statements.parser import parse_statement
+from expenses.bank_statements import llm as bank_llm
+from expenses.bank_statements.llm import parse_statement
 from expenses.bank_statements.pdf import extract_pdf_text
-from expenses.llm import parser as llm_parser
 from expenses.models import Expense
 
 pytestmark = pytest.mark.acceptance
@@ -176,7 +176,7 @@ def test_reconcile(case: _ReconcileCase, client: instructor.Instructor) -> None:
 
     pdf_text = extract_pdf_text(pdf_bytes=pdf_path.read_bytes())
     txns = parse_statement(pdf_text=pdf_text, client=client)
-    unmatched = llm_parser.reconcile(
+    unmatched = bank_llm.reconcile(
         txns=txns,
         sheet_entries=case.sheet_entries,
         client=client,

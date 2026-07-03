@@ -24,8 +24,8 @@ from pathlib import Path
 import instructor
 import pytest
 
-from expenses.llm import parser as llm_parser
 from expenses.models import Category, Pagador
+from expenses.receipts.llm import parse_image
 
 
 def _fold(text: str) -> str:
@@ -118,7 +118,7 @@ def test_parse_image(
     expected = _parse_filename(receipt_path)
     sent_at = datetime(2026, 6, 12, 12, 0)
 
-    result = llm_parser.parse_image(
+    result = parse_image(
         image_bytes=receipt_path.read_bytes(),
         sender=scenario.sender,
         sent_at=sent_at,

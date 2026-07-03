@@ -35,7 +35,7 @@ from pathlib import Path
 import instructor
 import pytest
 
-from expenses.bank_statements.parser import parse_statement
+from expenses.bank_statements.llm import parse_statement
 from expenses.bank_statements.pdf import extract_pdf_text
 from expenses.models import StatementTransaction
 

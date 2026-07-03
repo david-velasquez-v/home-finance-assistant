@@ -6,8 +6,8 @@ from decimal import Decimal
 import instructor
 import pytest
 
-from expenses.llm import parser as llm_parser
 from expenses.models import Category, Pagador
+from expenses.text_messages.llm import parse_text
 
 pytestmark: MarkDecorator = pytest.mark.acceptance
 
@@ -79,7 +79,7 @@ _CASES = [
 
 @pytest.mark.parametrize("case", _CASES, ids=lambda c: c.text)
 def test_parse_text(case: _TextCase, client: instructor.Instructor) -> None:
-    result = llm_parser.parse_text(
+    result = parse_text(
         text=case.text,
         sender=case.sender,
         sent_at=case.sent_at,

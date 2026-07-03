@@ -3,7 +3,7 @@ import instructor
 import pytest
 
 from expenses.config import Settings
-from expenses.llm.client import build_client
+from expenses.external.llm import build_client
 
 
 _API_KEY_FIELDS = {
