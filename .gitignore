@@ -1,4 +1,5 @@
 .env
+.env.test
 state.json
 credentials/
 __pycache__/

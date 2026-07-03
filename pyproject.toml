@@ -11,12 +11,12 @@ dependencies = [
     "anthropic>=0.30",
     "openai>=1.40",
     "google-generativeai>=0.7",
-    "google-api-python-client>=2.140",
     "google-auth>=2.32",
     "pdfplumber>=0.11",
     "Pillow>=10",
     "fastapi>=0.112",
     "uvicorn[standard]>=0.30",
+    "gspread>=6",
 ]
 
 [project.optional-dependencies]
@@ -35,3 +35,11 @@ packages = ["src/expenses"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+markers = [
+    "acceptance: tests that call real LLM APIs or external services (run with `pytest -m acceptance`)",
+]
+
+[dependency-groups]
+dev = [
+    "ty>=0.0.49",
+]
