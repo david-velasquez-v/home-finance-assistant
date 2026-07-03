@@ -8,3 +8,10 @@ __pycache__/
 dist/
 *.egg-info/
 .pytest_cache/
+.DS_Store
+
+# Real financial data — keep local only.
+tests/acceptance/fixtures/receipts/*
+!tests/acceptance/fixtures/receipts/.gitkeep
+tests/acceptance/fixtures/statements/*
+!tests/acceptance/fixtures/statements/.gitkeep
