@@ -1,48 +1,48 @@
 name: expenses-poll
 
 on:
-  schedule:
-    - cron: '36 12 * * *'  # 07:36 COT — off-the-hour minute to avoid GH cron congestion
-    - cron: '36 18 * * *'  # 13:36 COT
-    - cron: '36 0 * * *'   # 19:36 COT (00:36 UTC)
-  workflow_dispatch: {}      # manual "Run workflow" button for testing
+    schedule:
+        - cron: "36 13 * * *" # off-the-hour minute to avoid GH cron congestion
+        - cron: "36 19 * * *"
+        - cron: "36 1 * * *"
+    workflow_dispatch: {} # manual "Run workflow" button
 
-concurrency:                 # never let two runs overlap / double-process
-  group: expenses-poll
-  cancel-in-progress: false
+concurrency: # never let two runs overlap / double-process
+    group: expenses-poll
+    cancel-in-progress: false
 
 jobs:
-  poll:
-    runs-on: ubuntu-slim
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@v7
+    poll:
+        runs-on: ubuntu-slim
+        timeout-minutes: 10
+        steps:
+            - uses: actions/checkout@v7
 
-      - name: Install uv
-        uses: astral-sh/setup-uv@v8
-        with:
-          enable-cache: true
+            - name: Install uv
+              uses: astral-sh/setup-uv@v8.2.0
+              with:
+                  enable-cache: true
 
-      - name: Sync dependencies
-        run: uv sync --no-dev --frozen   # runtime only; uv provisions Python 3.12 per requires-python
+            - name: Sync dependencies
+              run: uv sync --no-dev --frozen # runtime only; uv provisions Python 3.12 per requires-python
 
-      - name: Run expenses poll
-        env:
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_USER_DAVID: ${{ secrets.TELEGRAM_USER_DAVID }}
-          TELEGRAM_USER_DANIELA: ${{ secrets.TELEGRAM_USER_DANIELA }}
-          GOOGLE_SPREADSHEET_ID: ${{ secrets.GOOGLE_SPREADSHEET_ID }}
-          GOOGLE_CREDENTIALS_JSON: ${{ secrets.GOOGLE_CREDENTIALS_JSON }}
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-        run: uv run python -m expenses
+            - name: Run expenses poll
+              env:
+                  TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+                  TELEGRAM_USER_DAVID: ${{ secrets.TELEGRAM_USER_DAVID }}
+                  TELEGRAM_USER_DANIELA: ${{ secrets.TELEGRAM_USER_DANIELA }}
+                  GOOGLE_SPREADSHEET_ID: ${{ secrets.GOOGLE_SPREADSHEET_ID }}
+                  GOOGLE_CREDENTIALS_JSON: ${{ secrets.GOOGLE_CREDENTIALS_JSON }}
+                  OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+              run: uv run python -m expenses
 
-      - name: Notify Telegram on failure
-        if: failure()
-        env:
-          TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          CHAT_ID: ${{ secrets.TELEGRAM_USER_DAVID }}
-          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-        run: |
-          curl -sS -X POST "https://api.telegram.org/bot${TOKEN}/sendMessage" \
-            -d chat_id="${CHAT_ID}" \
-            --data-urlencode "text=expenses-poll failed. Logs: ${RUN_URL}"
+            - name: Notify Telegram on failure
+              if: failure()
+              env:
+                  TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+                  CHAT_ID: ${{ secrets.TELEGRAM_USER_DAVID }}
+                  RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+              run: |
+                  curl -sS -X POST "https://api.telegram.org/bot${TOKEN}/sendMessage" \
+                    -d chat_id="${CHAT_ID}" \
+                    --data-urlencode "text=expenses-poll failed. Logs: ${RUN_URL}"
