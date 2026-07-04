@@ -2,8 +2,9 @@ name: expenses-poll
 
 on:
   schedule:
-    - cron: '0 13 * * *'   # 08:00 COT
-    - cron: '0 1 * * *'    # 20:00 COT (01:00 UTC next day)
+    - cron: '36 12 * * *'  # 07:36 COT — off-the-hour minute to avoid GH cron congestion
+    - cron: '36 18 * * *'  # 13:36 COT
+    - cron: '36 0 * * *'   # 19:36 COT (00:36 UTC)
   workflow_dispatch: {}      # manual "Run workflow" button for testing
 
 concurrency:                 # never let two runs overlap / double-process
@@ -15,10 +16,10 @@ jobs:
     runs-on: ubuntu-slim
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v5
+        uses: astral-sh/setup-uv@v8
         with:
           enable-cache: true
 
